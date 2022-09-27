@@ -1,0 +1,208 @@
+<script>
+   $(function() {
+     document.addEventListener('focusout', function(e) 	
+                               {window.scrollTo(0, 0)});
+     
+     
+       var datePickers = ["fromDate", "toDate", "todaysDate", "prescriptionDate"];
+   datePickers.forEach(function(id) {   
+           $("#" + id).datepicker({
+              dateFormat: 'mm-dd-yy',
+              onSelect: function() {
+                 refreshTotals();
+              }
+           });
+           $("#" + id).datepicker('setDate', new Date());       
+       });
+     
+       var inputValues = ["daily8", "daily2", "actual8", "actual2"];
+       inputValues.forEach(function(id) {   
+           $('#' + id).on('input', function () {
+               this.value = this.value.match(/^\d+\.?\d{0,2}/);
+           });      
+       });
+   
+       var totalIds = ["daily8", "daily2", 'actual8', 'actual2'];
+       totalIds.forEach(function(id) {
+          $('#' + id).on('change', function() { 
+             refreshTotals();         
+          });    
+       });
+     
+       $('#takenToday').change( function() {
+          refreshTotals();
+       });
+   });
+   
+   function refreshTotals()
+   {
+       var takenToday = $("#takenToday").is(':checked') ? 1 : 0;
+       var daily8 = getVal('daily8');
+       var daily2 = getVal('daily2');
+       var dailyTotal = (8 * daily8) + (2 * daily2);
+       $('#dailyTotal').val(dailyTotal);
+       var fromDateMoment = moment(getDate('fromDate'));
+       var toDateMoment = moment(getDate('toDate'));
+       var todaysDateMoment = moment(getDate('todaysDate'));
+       var prescribeDateMoment = moment(getDate('prescriptionDate'));
+
+       var daysPassed = todaysDateMoment.diff(fromDateMoment, 'days') + takenToday;
+       var totalDays = toDateMoment.diff(fromDateMoment, 'days') + 1;
+       var prescriptionDays = prescribeDateMoment.diff(toDateMoment, 'days') - 1;
+     
+       var daysDiff = totalDays - daysPassed;  
+       var expected8 = daily8 * daysDiff;
+       var expected2 = daily2 * daysDiff; 
+       $('#expected8').val(expected8);
+       $('#expected2').val(expected2);
+
+       var actual8 = getVal('actual8');
+       var actual2 = getVal('actual2');
+       var diff8 = expected8 - actual8;
+       var diff2 = expected2 - actual2;
+     
+       var prescribe8 = prescriptionDays * daily8;
+       var prescribe2 = prescriptionDays * daily2;
+     
+       if(diff8 > 0)
+       {
+         diff8 = diff8.toString();
+         prescribe8 = prescribe8 + (+diff8);
+         console.log("prescribe8 change: " + prescribe8);
+         diff8 += " under";
+       }
+       else if(diff8 == 0)
+       { 
+         diff8 = "accurate"; 
+       }
+       else if(diff8 < 0)
+       {
+         diff8 = Math.abs(diff8).toString();
+         prescribe8 = prescribe8 - (+diff8);
+         diff8 += " over";
+       }
+     
+       if(diff2 > 0)
+       {
+         diff2 = diff2.toString();
+         prescribe2 = prescribe2 + (+diff2);
+         diff2 += " under";     
+       }
+       else if(diff2 == 0)
+       { 
+         diff2 = "accurate"; 
+       }
+       else if(diff2 < 0)
+       {
+         diff2 = Math.abs(diff2).toString();
+         prescribe2 = prescribe2 - (+diff2);prescribe2 = prescribe2 + (+diff2);
+         diff2 += " over";
+       }
+       
+       $('#diff8').val(diff8);
+       $('#diff2').val(diff2);
+       $('#prescribe8').val(prescribe8);
+       $('#prescribe2').val(prescribe2);
+   }
+   
+   function getVal(id) {
+      var value = $('#' + id).val();
+      if(!value)
+      {
+         value = "0.0";
+      }  
+     return parseFloat(value);
+   }
+   
+   function getDate(id) {
+      var date = $('#' + id).val();
+      if(!date) {
+         return new Date();
+      } else {
+           return $('#' + id).datepicker('getDate');
+      }
+   }
+</script>
+
+<style>
+.value, .date {
+  float:right;
+  clear:right;
+  width:150px;
+  text-align:center;
+}
+  
+.valueLabel, .dateLabel {
+  float:left;
+  clear:both;
+}
+  
+.content-wrapper {
+  width:333px;
+  margin:0 auto;
+  padding-top:0px !important;
+}
+  
+.separator {
+   width:100% !important;  
+}
+</style>
+
+<div class="content-wrapper">
+  <label class="dateLabel" for="fromDate" >from date</label>
+  <input class="date" type="text" id="fromDate" />
+  <br/>
+  <label class="dateLabel" for="toDate" >to date</label>
+  <input class="date" type="text" id="toDate" />
+  <br/>
+  <label class="dateLabel" for="todaysDate" >today's date</label>
+  <input class="date" type="text" id="todaysDate" />
+  <br/>
+  <label class="dateLabel" for="prescriptionDate" >next prescription</label>
+  <input class="date" type="text" id="prescriptionDate" />
+  
+  <br/><br/>
+  <input type="checkbox" id="takenToday">
+  <label for="takenToday">Taken today</label>
+  
+  <br/><br/>
+  <label class="valueLabel" for="daily8">Daily 8 mg </label>
+  <input class="value" id="daily8" type="text" value="0.0">
+  <br/>
+  <label class="valueLabel" for="daily2">Daily 2 mg </label>
+  <input class="value" id="daily2" type="text" value="0.0">
+  <br/>
+  <label class="valueLabel" for="dailyTotal">Daily Total mg </label>
+  <input class="value" style="border:0" type="text" id="dailyTotal" value="0.0" readonly="readonly"/>
+  
+  <br/><br/>
+  <label class="valueLabel" for="expected8"> Expected 8 mg </label>
+  <input class="value" style="border:0" type="text" id="expected8" value="0.0" readonly="readonly"/>
+  <br/>
+  <label class="valueLabel" for="expected2"> Expected 2 mg </label>
+  <input class="value" style="border:0" type="text" id="expected2" value="0.0" readonly="readonly"/>
+  <br/><br/> 
+  
+  <hr class="solid separator">
+  
+  <br/>
+  <label class="valueLabel" for="actual8">Actual 8 mg </label>
+  <input class="value" id="actual8" type="text" value="0.0">
+  <br/>
+  <label class="valueLabel" for="actual2">Actual 2 mg </label>
+  <input class="value" id="actual2" type="text" value="0.0">
+  
+  <br/><br/>
+  <label class="valueLabel" for="diff8">8 mg </label>
+  <input class="value" style="border:0" type="text" id="diff8" value="accurate" readonly="readonly"/>
+  <br/>
+  <label class="valueLabel" for="diff2">2 mg </label>
+  <input class="value" style="border:0" type="text" id="diff2" value="accurate" readonly="readonly"/>
+  <br/><br/>
+  <hr class="solid separator">
+  <br/>
+  <label class="valueLabel" for="prescribe8">Prescribe 8 mg </label>
+  <input class="value" style="border:0" id="prescribe8" type="text" value="0.0" readonly="readonly">
+  <label class="valueLabel" for="prescribe2">Prescribe 2 mg </label>
+  <input class="value" style="border:0" id="prescribe2" type="text" value="0.0" readonly="readonly">
+  
